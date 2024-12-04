@@ -88,15 +88,13 @@ def main():
         next(csv_reader, None)
         for row in csv_reader: 
             project_ids.append(row[0])
+    
+    project_ids = list(dict.fromkeys(project_ids))
 
     os.remove(all_projects_file)
 
-    count = 0
     single_project_files = []
     for project_id in project_ids:
-        if count == 5:
-            break
-        count += 1
         single_project_files.append(
             download_file(
                 driver,
