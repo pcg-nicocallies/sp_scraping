@@ -10,10 +10,11 @@ import csv
 from google.cloud import storage
 from cloud_logging import cloud_logging
 from download_file import download_file
+import multiprocessing
 
-def main():
+def verra(account):
     warnings.filterwarnings("ignore")
-    download_folder = f"{os.getcwd()}/files"
+    download_folder = f"{os.getcwd()}/files/{account}"
     if not os.path.exists(download_folder):
         os.makedirs(download_folder)
     today = datetime.date.today().isoformat()
@@ -35,6 +36,13 @@ def main():
     driver.find_element("id", "mypassword").send_keys(os.getenv("verra_pw"))
     driver.find_element(By.XPATH, "/html/body/div[1]/div/div/div/div/div/div[2]/form/button").click()
 
+    if account == "test2":
+        time.sleep(35)
+    elif account == "test3":
+        time.sleep(70)
+    elif account == "test4":
+        time.sleep(105)
+
     totp = pyotp.parse_uri(os.getenv("verra_totp_uri"))
 
     driver.find_element("id", "mfacode").send_keys(totp.now())
@@ -46,7 +54,7 @@ def main():
         today,
         "https://registry.verra.org/myModule/rpt/MyAHrpt.asp?r=601&TabName=Primary%20Account&ID=0",
         "/html/body/div[2]/div/center/div/div/form/div/div/div/div/div/div[1]/div[2]/a[2]",
-        "primary_accounts"
+        f"{account}_primary_accounts"
     )
 
     retirement_sub_accounts_file = download_file(
@@ -55,7 +63,7 @@ def main():
         today,
         "https://registry.verra.org/myModule/rpt/MyAHrpt.asp?r=601&TabName=Retirement+Sub%2DAccounts",
         "/html/body/div[2]/div/center/div/div[2]/div/div/div/div[1]/div[2]/a[2]",
-        "retirement_sub_accounts"
+        f"{account}_retirement_sub_accounts"
     )
 
     inter_account_transfer_file = download_file(
@@ -64,7 +72,7 @@ def main():
         today,
         "https://registry.verra.org/myModule/rpt/MyAHrpt.asp?r=404&TabName=Inter-Account%20Transfer",
         "/html/body/div[2]/div/center/div/div/div/div/div/div[1]/div[2]/a[2]",
-        "inter_account_transfer_",
+        f"{account}_inter_account_transfer_",
         {
             "search_xpath": "/html/body/div[2]/div/center/div/div/div/div/div/div[1]/div[2]/a[1]",
             "search_field_nr": "11",
@@ -79,7 +87,7 @@ def main():
         today,
         "https://registry.verra.org/myModule/rpt/myAHrpt.asp?r=208&TabName=All",
         "/html/body/div[2]/div/center/div/div/div/div/div/div[1]/div[2]/a[2]",
-        "all_projects"
+        f"{account}_all_projects"
     )
 
     project_ids = []
@@ -102,7 +110,7 @@ def main():
                 today,
                 f"https://registry.verra.org/mymodule/rpt/myAHrpt.asp?r=617&id1={project_id}",
                 "/html/body/div[2]/div[2]/div/div/div/div[1]/div[2]/a[2]",
-                f"project_{project_id}"
+                f"{account}_project_{project_id}"
             )
         )
 
@@ -114,8 +122,14 @@ def main():
     bucket = client.get_bucket('pcg_sp_verra_test')
     for file in all_files:
         filename = file.split('/')[-1]
-        blob = bucket.blob(f'{today}/{filename}')
+        blob = bucket.blob(f'async_test/{today}/{filename}')
         blob.upload_from_filename(f'{file}')
+
+def main():
+    accounts = ["test1", "test2", "test3", "test4"]
+    pool = multiprocessing.Pool()
+    pool.map(verra, accounts)
+
 
 if __name__ == '__main__':
     main()
