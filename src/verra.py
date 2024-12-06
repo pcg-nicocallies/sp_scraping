@@ -118,7 +118,7 @@ def verra(account, today, options):
         blob.upload_from_filename(f'{file}')
 
 def main():
-    accounts = ["test1"]
+    accounts = ["test1", "test2", "test3", "test4"]
     procs = []
     warnings.filterwarnings("ignore")
     # today = datetime.date.today().isoformat()
