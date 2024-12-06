@@ -41,6 +41,6 @@ def download_file(driver, download_folder, today, site, download_element_xpath, 
         time.sleep(1)
     # filename = max([download_folder + "/" + f for f in os.listdir(download_folder)],key=os.path.getctime)
     filename = os.path.join(download_folder, "temp.csv")
-    new_file = os.path.join(download_folder, f"{new_filename}-{today}.csv")
+    new_file = os.path.join(download_folder, f"{new_filename}_{today}.csv")
     shutil.move(filename, new_file)
     return new_file

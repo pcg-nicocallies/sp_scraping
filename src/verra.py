@@ -10,21 +10,13 @@ import csv
 from google.cloud import storage
 from cloud_logging import cloud_logging
 from download_file import download_file
-import multiprocessing
+from multiprocessing import Process
+import uuid
 
-def verra(account):
-    warnings.filterwarnings("ignore")
+def verra(account, today, options):
     download_folder = f"{os.getcwd()}/files/{account}"
     if not os.path.exists(download_folder):
         os.makedirs(download_folder)
-    today = datetime.date.today().isoformat()
-    options = Options()
-    options.add_argument("--no-sandbox")
-    options.add_argument("--headless=new")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("--disable-dev-shm-usage")
-    user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36'
-    options.add_argument(f"--user-agent={user_agent}")
     prefs = {'download.default_directory' : download_folder}
     options.add_experimental_option('prefs', prefs)
     driver = webdriver.Chrome(options=options)
@@ -72,7 +64,7 @@ def verra(account):
         today,
         "https://registry.verra.org/myModule/rpt/MyAHrpt.asp?r=404&TabName=Inter-Account%20Transfer",
         "/html/body/div[2]/div/center/div/div/div/div/div/div[1]/div[2]/a[2]",
-        f"{account}_inter_account_transfer_",
+        f"{account}_inter_account_transfer",
         {
             "search_xpath": "/html/body/div[2]/div/center/div/div/div/div/div/div[1]/div[2]/a[1]",
             "search_field_nr": "11",
@@ -126,9 +118,25 @@ def verra(account):
         blob.upload_from_filename(f'{file}')
 
 def main():
-    accounts = ["test1", "test2", "test3", "test4"]
-    pool = multiprocessing.Pool()
-    pool.map(verra, accounts)
+    accounts = ["test1"]
+    procs = []
+    warnings.filterwarnings("ignore")
+    # today = datetime.date.today().isoformat()
+    today = str(uuid.uuid4())
+    cloud_logging("error", f"UUID: {today}")
+    options = Options()
+    options.add_argument("--no-sandbox")
+    options.add_argument("--headless=new")
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument("--disable-dev-shm-usage")
+    user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36'
+    options.add_argument(f"--user-agent={user_agent}")
+    for account in accounts:
+        proc = Process(target=verra, args=(account, today, options,))
+        procs.append(proc)
+        proc.start()
+    for proc in procs:
+        proc.join()
 
 
 if __name__ == '__main__':
